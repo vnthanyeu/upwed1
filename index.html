@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>1chai65 - Chill Music Player</title>
+  <style>
+    :root {
+      --neon-pink: #ff2e88;
+      --neon-cyan: #00f5d4;
+      --neon-purple: #9d4edd;
+      --bg-dark: #0b111e;
+      --card-bg: rgba(25, 32, 48, 0.76);
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 30%, #241838 0%, #0b111e 60%, #070b14 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-main);
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    .player-container {
+      width: 100%;
+      max-width: 980px;
+      background: var(--card-bg);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 28px;
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      padding: 34px;
+      gap: 34px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65);
+    }
+
+    /* Cột trái */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+    }
+
+    .top-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid var(--neon-pink);
+      box-shadow: 0 0 16px rgba(255, 46, 136, 0.6);
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      flex-shrink: 0;
+      background: #141a29;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .brand-logo:hover {
+      transform: scale(1.06);
+      box-shadow: 0 0 22px rgba(255, 46, 136, 0.85);
+    }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .logo-fallback {
+      font-size: 11px;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 0 8px var(--neon-pink);
+      letter-spacing: 0.5px;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .upload-btn {
+      background: rgba(255, 46, 136, 0.14);
+      border: 1px solid rgba(255, 46, 136, 0.45);
+      color: #ff85b8;
+      padding: 6px 11px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .upload-btn:hover {
+      background: var(--neon-pink);
+      color: #fff;
+      box-shadow: 0 0 14px rgba(255, 46, 136, 0.55);
+    }
+
+    .upload-btn.secondary {
+      background: rgba(0, 245, 212, 0.1);
+      border-color: rgba(0, 245, 212, 0.35);
+      color: #67e8f9;
+    }
+
+    .upload-btn.secondary:hover {
+      background: #0891b2;
+      color: #fff;
+      box-shadow: 0 0 14px rgba(0, 245, 212, 0.45);
+    }
+
+    /* Nút đang được chọn (online / offline) */
+    .upload-btn.active {
+      background: var(--neon-pink);
+      border-color: var(--neon-pink);
+      color: #fff;
+      box-shadow: 0 0 14px rgba(255, 46, 136, 0.55);
+    }
+
+    .upload-btn.secondary.active {
+      background: #0891b2;
+      border-color: #00f5d4;
+      box-shadow: 0 0 14px rgba(0, 245, 212, 0.5);
+    }
+
+    .upload-btn.danger {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: #fca5a5;
+    }
+
+    .upload-btn.danger:hover {
+      background: #dc2626;
+      color: #fff;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.5);
+    }
+
+    .upload-btn[hidden] {
+      display: none;
+    }
+
+    /* Đĩa nhạc + Sóng nhạc vòng tròn */
+    .vinyl-wrapper {
+      position: relative;
+      width: 245px;
+      height: 245px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 8px 0;
+    }
+
+    #circleWaveCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .vinyl-disc {
+      width: 162px;
+      height: 162px;
+      border-radius: 50%;
+      background: repeating-radial-gradient(
+        #111 0,
+        #111 3px,
+        #1e1e24 4px,
+        #111 6px
+      );
+      border: 3px solid #2c3142;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+      animation: spin 12s linear infinite;
+      animation-play-state: paused;
+      z-index: 2;
+      transition: transform 0.08s ease-out;
+    }
+
+    .vinyl-disc.playing {
+      animation-play-state: running;
+    }
+
+    .vinyl-center {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #38bdf8 0%, #0284c7 65%, #0f172a 100%);
+      border: 5px solid #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .vinyl-hole {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #0b111e;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Thông tin bài hát */
+    .song-info {
+      text-align: center;
+      margin-top: 2px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .song-title-wrapper {
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 0 8px;
+      margin-bottom: 4px;
+    }
+
+    .song-title {
+      display: inline-block;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .song-title.marquee-active {
+      padding-left: 100%;
+      animation: titleScroll 12s linear infinite;
+    }
+
+    .song-title.marquee-active:hover {
+      animation-play-state: paused;
+    }
+
+    @keyframes titleScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .song-artist {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 12px;
+    }
+
+    /* 4 nút tròn đổi màu sóng nhạc */
+    .wave-color-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .color-dot-btn {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      padding: 0;
+    }
+
+    .color-dot-btn:hover {
+      transform: scale(1.25);
+    }
+
+    .color-dot-btn.active {
+      transform: scale(1.3);
+      border-color: #ffffff;
+    }
+
+    .color-dot-btn[data-theme="pink"] {
+      background: #ff2e88;
+      box-shadow: 0 0 10px rgba(255, 46, 136, 0.75);
+    }
+
+    .color-dot-btn[data-theme="cyan"] {
+      background: #00f5d4;
+      box-shadow: 0 0 10px rgba(0, 245, 212, 0.75);
+    }
+
+    .color-dot-btn[data-theme="rainbow"] {
+      background: conic-gradient(#ff2e88, #facc15, #00f5d4, #a855f7, #ff2e88);
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.75);
+    }
+
+    .color-dot-btn[data-theme="white"] {
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.85);
+    }
+
+    /* Thanh tiến trình */
+    .progress-area {
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 99px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff2e88, #f472b6);
+      border-radius: 99px;
+      position: relative;
+      transition: width 0.1s linear;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 10px var(--neon-pink);
+    }
+
+    .time-stamps {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 7px;
+    }
+
+    /* Nút điều khiển */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .ctrl-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+      position: relative;
+    }
+
+    .ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+    .ctrl-btn.mode-btn {
+      width: 34px;
+      height: 34px;
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .ctrl-btn.mode-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .ctrl-btn.mode-btn.active {
+      color: var(--neon-pink);
+      background: rgba(255, 46, 136, 0.16);
+      box-shadow: 0 0 12px rgba(255, 46, 136, 0.4);
+    }
+
+    .repeat-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      font-size: 8px;
+      font-weight: 800;
+      background: var(--neon-pink);
+      color: #fff;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .ctrl-btn.repeat-one .repeat-badge {
+      display: flex;
+    }
+
+    .play-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: none;
+      background: var(--neon-pink);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 22px rgba(255, 46, 136, 0.7);
+      transition: transform 0.2s;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.07);
+    }
+
+    .icon-svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .icon-stroke {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Cột phải: Playlist */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .playlist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+
+    .playlist-header h2 {
+      font-size: 21px;
+      font-weight: 600;
+    }
+
+    .header-right-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mode-status {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 4px 10px;
+      border-radius: 99px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    .playlist-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--neon-pink);
+      margin-bottom: 8px;
+      padding: 0 10px;
+    }
+
+    .playlist-meta span:last-child {
+      color: var(--text-muted);
+    }
+
+    .song-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 365px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .song-list::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .song-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 46, 136, 0.45);
+      border-radius: 99px;
+    }
+
+    .song-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+      font-size: 13px;
+      min-width: 0;
+    }
+
+    .song-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .song-item.active {
+      background: linear-gradient(90deg, rgba(255, 46, 136, 0.28) 0%, rgba(255, 46, 136, 0.05) 100%);
+      border-left: 3px solid var(--neon-pink);
+    }
+
+    .song-index {
+      width: 28px;
+      color: var(--text-muted);
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .song-item.active .song-index {
+      color: var(--neon-pink);
+      font-weight: bold;
+    }
+
+    .song-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      margin-right: 12px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    /* Cắt gọn tên bài hát thành 1 dòng với dấu ... trong danh sách */
+    .song-name {
+      flex: 1;
+      min-width: 0;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .song-duration {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+
+    .eq-bars {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+    }
+
+    .eq-bars span {
+      width: 2px;
+      background: var(--neon-pink);
+      animation: eqBounce 0.6s ease-in-out infinite alternate;
+    }
+
+    .eq-bars span:nth-child(2) { animation-delay: 0.2s; }
+    .eq-bars span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes eqBounce {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+
+    /* Góc dưới bên phải */
+    .social-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      flex-wrap: wrap;
+    }
+
+    .social-btn {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #e2e8f0;
+      padding: 6px 11px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: 0.2s;
+    }
+
+    .social-btn:hover {
+      background: rgba(255, 46, 136, 0.22);
+      border-color: var(--neon-pink);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(255, 46, 136, 0.45);
+    }
+
+    .social-btn.fb:hover {
+      background: rgba(24, 119, 242, 0.25);
+      border-color: #3b82f6;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    }
+
+    .social-btn.tt:hover {
+      background: rgba(0, 245, 212, 0.2);
+      border-color: #00f5d4;
+      box-shadow: 0 0 12px rgba(0, 245, 212, 0.45);
+    }
+
+    .social-btn.zl:hover {
+      background: rgba(0, 104, 255, 0.25);
+      border-color: #38bdf8;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Thanh chạy chữ dưới cùng */
+    .bottom-ticker {
+      width: 100%;
+      max-width: 980px;
+      margin-top: 18px;
+      border-top: 1px solid rgba(255, 46, 136, 0.5);
+      padding-top: 8px;
+      overflow: hidden;
+      white-space: nowrap;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+
+    .ticker-text {
+      display: inline-block;
+      padding-left: 100%;
+      animation: marquee 18s linear infinite;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(15, 23, 42, 0.94);
+      border: 1px solid var(--neon-pink);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 12px;
+      box-shadow: 0 0 20px rgba(255, 46, 136, 0.5);
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: 0.25s;
+      z-index: 999;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Ẩn hoàn toàn khung SoundCloud Widget nhưng vẫn giữ hoạt động ngầm */
+    .hidden-sc-widget {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+      .player-container {
+        grid-template-columns: 1fr;
+        padding: 22px;
+      }
+      .social-footer {
+        justify-content: center;
+      }
+    }
+
+    .top-actions { width: 100%; justify-content: center; }
+
+    /* ===== Tối ưu hiển thị tự động vừa máy tính & điện thoại ===== */
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    * { -webkit-tap-highlight-color: transparent; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: clamp(10px, 2vh, 24px) clamp(10px, 2vw, 24px);
+      padding-left: max(clamp(10px, 2vw, 24px), env(safe-area-inset-left));
+      padding-right: max(clamp(10px, 2vw, 24px), env(safe-area-inset-right));
+      padding-bottom: max(clamp(10px, 2vh, 24px), env(safe-area-inset-bottom));
+    }
+
+    .player-container {
+      max-width: min(980px, 100%);
+      padding: clamp(18px, 3vh, 34px) clamp(18px, 2.6vw, 34px);
+      gap: clamp(18px, 2.6vw, 34px);
+    }
+
+    /* Đĩa than co giãn theo màn hình (giữ nguyên tỉ lệ) */
+    .vinyl-wrapper {
+      width: clamp(170px, 34vh, 245px);
+      height: auto;
+      aspect-ratio: 1 / 1;
+    }
+    .vinyl-disc { width: 66%; height: auto; aspect-ratio: 1 / 1; }
+    .vinyl-center { width: 35%; height: auto; aspect-ratio: 1 / 1; border-width: clamp(3px, 0.6vw, 5px); }
+
+    .song-title { font-size: clamp(15px, 2.2vh, 18px); }
+    .top-bar { flex-wrap: wrap; }
+    .song-list { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+
+    /* Máy tính: vừa khít 1 màn hình, danh sách bài hát tự cuộn */
+    @media (min-width: 769px) {
+      body { justify-content: center; }
+      .player-container {
+        max-height: calc(100vh - 80px);
+        max-height: calc(100dvh - 80px);
+        grid-template-rows: minmax(0, 1fr);
+        align-items: stretch;
+      }
+      .left-panel { min-height: 0; overflow-y: auto; scrollbar-width: none; }
+      .left-panel::-webkit-scrollbar { display: none; }
+      .right-panel { min-height: 0; }
+      .song-list { flex: 1 1 auto; min-height: 0; max-height: none; }
+    }
+
+    /* Máy tính màn hình thấp (laptop nhỏ) */
+    @media (min-width: 769px) and (max-height: 700px) {
+      .player-container { padding: 16px 20px; gap: 20px; }
+      .vinyl-wrapper { width: clamp(140px, 30vh, 200px); margin: 2px 0; }
+      .wave-color-bar { margin-top: 6px; }
+      .progress-area { margin-top: 8px; }
+      .controls { margin-top: 8px; }
+      .bottom-ticker { margin-top: 10px; }
+    }
+
+    /* Điện thoại / máy tính bảng dọc: 1 cột, cuộn trang tự nhiên */
+    @media (max-width: 768px) {
+      body { justify-content: flex-start; padding-top: 12px; }
+      .player-container {
+        grid-template-columns: 1fr;
+        max-height: none;
+        padding: 18px 16px;
+        gap: 22px;
+        border-radius: 22px;
+      }
+      .left-panel { gap: 6px; }
+      .vinyl-wrapper { width: clamp(200px, 66vw, 280px); margin: 10px 0; }
+      .top-actions { flex: 1; }
+      .upload-btn { padding: 8px 12px; font-size: 12px; }
+      .controls { gap: 14px; margin-top: 14px; }
+      .ctrl-btn { width: 44px; height: 44px; }
+      .ctrl-btn.mode-btn { width: 40px; height: 40px; }
+      .play-btn { width: 60px; height: 60px; }
+      .progress-bar { height: 8px; }
+      .progress-area { margin-top: 18px; }
+      .color-dot-btn { width: 20px; height: 20px; }
+      .wave-color-bar { gap: 16px; margin-top: 12px; }
+      .song-list { max-height: min(46vh, 420px); min-height: 160px; }
+      .song-item { padding: 10px 12px; }
+      .social-footer { justify-content: center; }
+      .social-btn { padding: 8px 13px; font-size: 12px; }
+      .bottom-ticker { margin-top: 14px; font-size: 12px; }
+      .toast { left: 12px; right: 12px; bottom: max(14px, env(safe-area-inset-bottom)); text-align: center; }
+    }
+
+    /* Điện thoại nhỏ */
+    @media (max-width: 380px) {
+      .player-container { padding: 14px 12px; }
+      .playlist-header h2 { font-size: 18px; }
+      .controls { gap: 8px; }
+      .social-btn span { font-size: 11px; }
+    }
+
+    /* Điện thoại xoay ngang (màn hình thấp) */
+    @media (max-height: 480px) and (orientation: landscape) and (max-width: 1000px) {
+      .player-container { grid-template-columns: 1fr 1.2fr; max-height: none; }
+      .vinyl-wrapper { width: 150px; }
+      .song-list { max-height: 60vh; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Khung SoundCloud chạy ngầm -->
+  <iframe
+    id="sc-widget"
+    class="hidden-sc-widget"
+    width="100%"
+    height="450"
+    scrolling="no"
+    frameborder="no"
+    allow="autoplay"
+    src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2F1chai65%2Fsets%2Ftet-nhac%3Fsi%3Da85e5ae706b94eb8a31b3eda83d87038%26utm_source%3Dclipboard%26utm_medium%3Dtext%26utm_campaign%3Dsocial_sharing&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false">
+  </iframe>
+
+  <div class="player-container">
+    <!-- Cột trái -->
+    <div class="left-panel">
+      <div class="top-bar">
+        <div class="top-actions">
+          <button type="button" class="upload-btn active" id="onlineBtn" title="Nghe nhạc từ SoundCloud (cần mạng)">
+            <span>Nhạc online</span>
+          </button>
+
+          <button type="button" class="upload-btn secondary" id="offlineBtn" title="Chọn nhạc có sẵn trong máy (không cần mạng)">
+            <span id="offlineBtnText">Nhạc offline</span>
+          </button>
+          <input type="file" id="offlineInput" accept="audio/*" multiple hidden />
+
+          <button type="button" class="upload-btn danger" id="clearOfflineBtn" title="Xóa toàn bộ nhạc offline đã lưu trong trình duyệt" hidden>
+            <span>Xóa nhạc đã lưu</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Đĩa than + Sóng nhạc vòng tròn mềm mại -->
+      <div class="vinyl-wrapper">
+        <canvas id="circleWaveCanvas" width="490" height="490"></canvas>
+        <div class="vinyl-disc" id="vinylDisc">
+          <div class="vinyl-center">
+            <div class="vinyl-hole"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="song-info">
+        <div class="song-title-wrapper" id="titleWrapper">
+          <div class="song-title" id="currentTitle">ĐANG TẢI PLAYLIST...</div>
+        </div>
+        <div class="song-artist" id="currentArtist"></div>
+      </div>
+
+      <!-- 4 nút tròn đổi màu sóng nhạc -->
+      <div class="wave-color-bar" id="waveColorBar">
+        <button class="color-dot-btn active" data-theme="pink" aria-label="Hồng Neon"></button>
+        <button class="color-dot-btn" data-theme="cyan" aria-label="Xanh Cyan"></button>
+        <button class="color-dot-btn" data-theme="rainbow" aria-label="Cầu vồng"></button>
+        <button class="color-dot-btn" data-theme="white" aria-label="Trắng sáng"></button>
+      </div>
+
+      <div class="progress-area">
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="time-stamps">
+          <span id="currentTime">00:00</span>
+          <span id="totalTime">00:00</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="ctrl-btn mode-btn" id="shuffleBtn" title="Phát ngẫu nhiên (Shuffle)">
+          <svg class="icon-stroke" viewBox="0 0 24 24">
+            <polyline points="16 3 21 3 21 8"></polyline>
+            <line x1="4" y1="20" x2="21" y2="3"></line>
+            <polyline points="21 16 21 21 16 21"></polyline>
+            <line x1="15" y1="15" x2="21" y2="21"></line>
+            <line x1="4" y1="4" x2="9" y2="9"></line>
+          </svg>
+        </button>
+
+        <button class="ctrl-btn" id="prevBtn" title="Bài trước">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+
+        <button class="play-btn" id="playBtn" title="Phát / Tạm dừng">
+          <svg class="icon-svg" id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+
+        <button class="ctrl-btn" id="nextBtn" title="Bài tiếp theo">
+          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+
+        <button class="ctrl-btn mode-btn" id="repeatBtn" title="Lặp lại (Tắt / Tất cả / 1 bài)">
+          <svg class="icon-stroke" viewBox="0 0 24 24">
+            <polyline points="17 1 21 5 17 9"></polyline>
+            <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+            <polyline points="7 23 3 19 7 15"></polyline>
+            <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+          </svg>
+          <span class="repeat-badge">1</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Cột phải -->
+    <div class="right-panel">
+      <div class="playlist-header">
+        <h2>Now Playing</h2>
+        <div class="header-right-tools">
+          <span class="mode-status" id="modeStatus">Tuần tự</span>
+        </div>
+      </div>
+
+      <div class="playlist-meta">
+        <span>PLAYLIST</span>
+        <span id="trackCounter">0 / 0</span>
+      </div>
+
+      <ul class="song-list" id="songList">
+        <li class="song-item" style="justify-content:center; color: var(--text-muted);">
+          Đang kết nối danh sách nhạc từ SoundCloud...
+        </li>
+      </ul>
+
+      <!-- Góc dưới bên phải: 4 nút Chia sẻ, Facebook, TikTok, Zalo -->
+      <div class="social-footer">
+        <button class="social-btn" id="shareWebBtn" title="Chia sẻ trang web">
+          <svg class="icon-stroke" style="width:13px;height:13px;" viewBox="0 0 24 24">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span>Chia sẻ</span>
+        </button>
+
+        <a class="social-btn fb" href="https://web.facebook.com/qtksnb" target="_blank" rel="noopener noreferrer" title="Trang cá nhân Facebook">
+          <svg class="icon-svg" style="width:13px;height:13px;" viewBox="0 0 24 24">
+            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+          </svg>
+          <span>Facebook</span>
+        </a>
+
+        <a class="social-btn tt" href="https://www.tiktok.com/@1chai65" target="_blank" rel="noopener noreferrer" title="Kênh TikTok 1chai65">
+          <svg class="icon-svg" style="width:13px;height:13px;" viewBox="0 0 24 24">
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+          </svg>
+          <span>TikTok</span>
+        </a>
+
+        <a class="social-btn zl" href="https://zalo.me/0987196074" target="_blank" rel="noopener noreferrer" title="Liên hệ Zalo">
+          <svg class="icon-svg" style="width:13px;height:13px;" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.03 2 11c0 2.75 1.38 5.21 3.55 6.86L4.5 22l4.53-1.81c.95.26 1.95.41 2.97.41 5.52 0 10-4.03 10-9S17.52 2 12 2zm-2.4 11.5H6.2v-1.2l2.35-3.1H6.3V8h3.3v1.15L7.25 12.3h2.35v1.2zm2.8 0h-1.3V8h1.3v5.5zm4.5 0h-3.1V8h1.3v4.3h1.8v1.2z"/>
+          </svg>
+          <span>Zalo</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-ticker">
+    <div class="ticker-text">Sếp đang nghe nhạc được tạo bởi 1chai65 • Chúc bạn có những phút giây thư giãn tuyệt vời ==))</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <audio id="audioPlayer" crossorigin="anonymous"></audio>
+
+  <script src="https://w.soundcloud.com/player/api.js"></script>
+  <script>
+    const thumbColors = [
+      "linear-gradient(135deg,#ff2e88,#7928ca)",
+      "linear-gradient(135deg,#00f5d4,#0284c7)",
+      "linear-gradient(135deg,#f59e0b,#ef4444)",
+      "linear-gradient(135deg,#8b5cf6,#ec4899)",
+      "linear-gradient(135deg,#10b981,#3b82f6)"
+    ];
+
+    let songs = [];
+    let currentIndex = 0;
+    let isPlaying = false;
+    let isShuffle = false;
+    let repeatMode = 0; // 0: Off, 1: Repeat All, 2: Repeat One
+    let waveTheme = 'pink';
+
+    // Khởi tạo SoundCloud Widget
+    const scIframe = document.getElementById('sc-widget');
+    const scWidget = SC.Widget(scIframe);
+    const audio = document.getElementById('audioPlayer');
+
+    const songListEl = document.getElementById('songList');
+    const vinylDisc = document.getElementById('vinylDisc');
+    const playBtn = document.getElementById('playBtn');
+    const playIcon = document.getElementById('playIcon');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const repeatBtn = document.getElementById('repeatBtn');
+    const modeStatus = document.getElementById('modeStatus');
+    const titleWrapper = document.getElementById('titleWrapper');
+    const currentTitle = document.getElementById('currentTitle');
+    const currentArtist = document.getElementById('currentArtist');
+    const trackCounter = document.getElementById('trackCounter');
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    const currentTimeEl = document.getElementById('currentTime');
+    const totalTimeEl = document.getElementById('totalTime');
+    const offlineBtn = document.getElementById('offlineBtn');
+    const onlineBtn = document.getElementById('onlineBtn');
+    const offlineBtnText = document.getElementById('offlineBtnText');
+    const clearOfflineBtn = document.getElementById('clearOfflineBtn');
+    const offlineInput = document.getElementById('offlineInput');
+    const shareWebBtn = document.getElementById('shareWebBtn');
+    const toastEl = document.getElementById('toast');
+
+    // Rút gọn tiêu đề bài hát (xóa hashtag, URL, ghi chú thừa sau // hoặc |)
+    function cleanSongTitle(rawTitle) {
+      if (!rawTitle) return "";
+      let cleaned = rawTitle
+        .replace(/https?:\/\/\S+/gi, '')
+        .replace(/#\S+/g, '')
+        .split('//')[0]
+        .split('|')[0]
+        .replace(/\[\s*.*?remix.*?\s*\]/gi, '')
+        .replace(/\(\s*full\s*hd\s*\)/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return (cleaned || rawTitle).toUpperCase();
+    }
+
+    function formatMs(ms) {
+      if (!ms || isNaN(ms)) return "--:--";
+      const totalSec = Math.floor(ms / 1000);
+      const mins = Math.floor(totalSec / 60);
+      const secs = totalSec % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateLeftTitle(titleText) {
+      currentTitle.classList.remove('marquee-active');
+      currentTitle.textContent = titleText;
+      currentTitle.title = titleText;
+      requestAnimationFrame(() => {
+        if (currentTitle.scrollWidth > titleWrapper.clientWidth) {
+          currentTitle.classList.add('marquee-active');
+        }
+      });
+    }
+
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastEl._timer);
+      toastEl._timer = setTimeout(() => toastEl.classList.remove('show'), 2800);
+    }
+
+    // Đồng bộ tên bài hát bị Lazy-Load từ SoundCloud
+    function syncSoundCloudMetadata() {
+      scWidget.getSounds((scSounds) => {
+        if (!scSounds || !scSounds.length) return;
+        let hasUpdated = false;
+        scSounds.forEach((s, idx) => {
+          if (songs[idx] && songs[idx].isSC && s.title && !songs[idx].isLoadedMeta) {
+            songs[idx].title = cleanSongTitle(s.title);
+            songs[idx].fullTitle = s.title;
+            songs[idx].artist = s.user && s.user.username ? s.user.username : "";
+            songs[idx].duration = formatMs(s.duration);
+            songs[idx].durationMs = s.duration || 0;
+            songs[idx].isLoadedMeta = true;
+            hasUpdated = true;
+
+            if (idx === currentIndex) {
+              updateLeftTitle(songs[idx].title);
+              currentArtist.textContent = songs[idx].artist;
+              totalTimeEl.textContent = songs[idx].duration;
+            }
+          }
+        });
+        if (hasUpdated) renderPlaylist();
+      });
+    }
+
+    // Kết nối dữ liệu từ SoundCloud khi sẵn sàng
+    scWidget.bind(SC.Widget.Events.READY, () => {
+      scWidget.getSounds((scSounds) => {
+        if (scSounds && scSounds.length > 0) {
+          songs = scSounds.map((s, idx) => {
+            const hasTitle = Boolean(s.title);
+            return {
+              title: hasTitle ? cleanSongTitle(s.title) : `ĐANG TẢI TÊN BÀI ${idx + 1}...`,
+              fullTitle: hasTitle ? s.title : `Bài hát ${idx + 1}`,
+              artist: s.user && s.user.username ? s.user.username : "",
+              duration: formatMs(s.duration),
+              durationMs: s.duration || 0,
+              isSC: true,
+              scIndex: idx,
+              isLoadedMeta: hasTitle
+            };
+          });
+          loadSong(0, false);
+
+          let retryCount = 0;
+          const syncInterval = setInterval(() => {
+            syncSoundCloudMetadata();
+            retryCount++;
+            const allLoaded = songs.every(item => !item.isSC || item.isLoadedMeta);
+            if (allLoaded || retryCount >= 10) {
+              clearInterval(syncInterval);
+            }
+          }, 2500);
+        } else {
+          // Nguồn là 1 bài đơn lẻ: lấy thông tin bài đang nạp
+          scWidget.getCurrentSound((s) => {
+            if (!s) {
+              songListEl.innerHTML = '<li class="song-item" style="justify-content:center;">Không tải được danh sách SoundCloud.</li>';
+              return;
+            }
+            songs = [{
+              title: cleanSongTitle(s.title),
+              fullTitle: s.title,
+              artist: s.user && s.user.username ? s.user.username : "",
+              duration: formatMs(s.duration),
+              durationMs: s.duration || 0,
+              isSC: true,
+              scIndex: 0,
+              isLoadedMeta: true
+            }];
+            loadSong(0, false);
+          });
+        }
+      });
+    });
+
+    // Cập nhật tiến trình chạy nhạc từ SoundCloud
+    scWidget.bind(SC.Widget.Events.PLAY_PROGRESS, (data) => {
+      const currentSong = songs[currentIndex];
+      if (!currentSong || !currentSong.isSC) return;
+      if (data.relativePosition !== undefined) {
+        progressFill.style.width = `${data.relativePosition * 100}%`;
+      }
+      if (data.currentPosition !== undefined) {
+        currentTimeEl.textContent = formatMs(data.currentPosition);
+      }
+    });
+
+    // Khi bài hát bắt đầu phát -> Cập nhật chính xác tên bài hiện tại
+    scWidget.bind(SC.Widget.Events.PLAY, () => {
+      const currentSong = songs[currentIndex];
+      if (currentSong && currentSong.isSC) {
+        isPlaying = true;
+        vinylDisc.classList.add('playing');
+        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+
+        scWidget.getCurrentSound((sound) => {
+          if (sound && sound.title) {
+            currentSong.title = cleanSongTitle(sound.title);
+            currentSong.fullTitle = sound.title;
+            currentSong.artist = sound.user && sound.user.username ? sound.user.username : "";
+            currentSong.duration = formatMs(sound.duration);
+            currentSong.isLoadedMeta = true;
+
+            updateLeftTitle(currentSong.title);
+            currentArtist.textContent = currentSong.artist;
+            totalTimeEl.textContent = currentSong.duration;
+            renderPlaylist();
+          }
+        });
+        syncSoundCloudMetadata();
+      }
+    });
+
+    scWidget.bind(SC.Widget.Events.PAUSE, () => {
+      const currentSong = songs[currentIndex];
+      if (currentSong && currentSong.isSC) {
+        isPlaying = false;
+        vinylDisc.classList.remove('playing');
+        playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        renderPlaylist();
+      }
+    });
+
+    scWidget.bind(SC.Widget.Events.FINISH, () => {
+      const currentSong = songs[currentIndex];
+      if (currentSong && currentSong.isSC) {
+        handleSongEnded();
+      }
+    });
+
+    // Đổi màu sóng nhạc
+    document.querySelectorAll('.color-dot-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.color-dot-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        waveTheme = btn.dataset.theme;
+      });
+    });
+
+    // Chia sẻ Web
+    shareWebBtn.addEventListener('click', async () => {
+      const shareData = {
+        title: '1chai65 - Chill Music Player',
+        text: 'Nghe nhạc chill cùng 1chai65!',
+        url: window.location.href
+      };
+      if (navigator.share && window.location.protocol.startsWith('http')) {
+        try { await navigator.share(shareData); } catch (e) {}
+      } else {
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          showToast('Đã sao chép liên kết trang web!');
+        } catch (e) {
+          showToast('Trang nghe nhạc 1chai65!');
+        }
+      }
+    });
+
+    function updateModeUI() {
+      shuffleBtn.classList.toggle('active', isShuffle);
+      repeatBtn.classList.remove('active', 'repeat-one');
+      if (repeatMode === 1) repeatBtn.classList.add('active');
+      else if (repeatMode === 2) repeatBtn.classList.add('active', 'repeat-one');
+
+      const labels = [];
+      if (isShuffle) labels.push('Ngẫu nhiên');
+      if (repeatMode === 1) labels.push('Lặp tất cả');
+      if (repeatMode === 2) labels.push('Lặp 1 bài');
+      modeStatus.textContent = labels.length ? labels.join(' • ') : 'Tuần tự';
+    }
+
+    shuffleBtn.addEventListener('click', () => {
+      isShuffle = !isShuffle;
+      updateModeUI();
+    });
+
+    repeatBtn.addEventListener('click', () => {
+      repeatMode = (repeatMode + 1) % 3;
+      updateModeUI();
+    });
+
+    function getRandomIndex() {
+      if (songs.length <= 1) return currentIndex;
+      let nextIdx;
+      do {
+        nextIdx = Math.floor(Math.random() * songs.length);
+      } while (nextIdx === currentIndex);
+      return nextIdx;
+    }
+
+    // Hiệu ứng sóng nhạc vòng tròn mềm mại
+    let audioCtx, analyser, dataArray, sourceNode;
+    const circleCanvas = document.getElementById('circleWaveCanvas');
+    const cCtx = circleCanvas.getContext('2d');
+
+    function initAudioVisualizer() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 128;
+        analyser.smoothingTimeConstant = 0.78;
+        sourceNode = audioCtx.createMediaElementSource(audio);
+        sourceNode.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+      } catch (e) {
+        analyser = null;
+      }
+    }
+
+    let wavePhase = 0;
+
+    function getThemeColors(hueShift) {
+      if (waveTheme === 'cyan') {
+        return { stroke1: '#00f5d4', stroke2: 'rgba(56, 189, 248, 0.55)', glow: '#00f5d4' };
+      }
+      if (waveTheme === 'white') {
+        return { stroke1: '#ffffff', stroke2: 'rgba(226, 232, 240, 0.55)', glow: '#ffffff' };
+      }
+      if (waveTheme === 'rainbow') {
+        const h1 = Math.floor(hueShift % 360);
+        const h2 = Math.floor((hueShift + 120) % 360);
+        return {
+          stroke1: `hsl(${h1}, 95%, 62%)`,
+          stroke2: `hsla(${h2}, 95%, 62%, 0.6)`,
+          glow: `hsl(${h1}, 95%, 60%)`
+        };
+      }
+      return { stroke1: '#ff2e88', stroke2: 'rgba(192, 132, 252, 0.6)', glow: '#ff2e88' };
+    }
+
+    function drawSmoothClosedWave(cx, cy, points, strokeStyle, lineWidth, glowColor) {
+      const n = points.length;
+      cCtx.save();
+      cCtx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const p0 = points[i];
+        const p1 = points[(i + 1) % n];
+        const midX = (p0.x + p1.x) / 2;
+        const midY = (p0.y + p1.y) / 2;
+        if (i === 0) {
+          const prev = points[n - 1];
+          cCtx.moveTo((prev.x + p0.x) / 2, (prev.y + p0.y) / 2);
+        }
+        cCtx.quadraticCurveTo(p0.x, p0.y, midX, midY);
+      }
+      cCtx.closePath();
+      cCtx.lineWidth = lineWidth;
+      cCtx.strokeStyle = strokeStyle;
+      cCtx.shadowBlur = 18;
+      cCtx.shadowColor = glowColor;
+      cCtx.stroke();
+      cCtx.restore();
+    }
+
+    function renderVisualizer() {
+      requestAnimationFrame(renderVisualizer);
+      wavePhase += isPlaying ? 0.055 : 0.015;
+
+      cCtx.clearRect(0, 0, circleCanvas.width, circleCanvas.height);
+      const cx = circleCanvas.width / 2;
+      const cy = circleCanvas.height / 2;
+      const baseRadius = 172;
+      const segments = 64;
+
+      let bassSum = 0;
+      const freqValues = new Array(segments).fill(0);
+      const currentSong = songs[currentIndex];
+
+      if (analyser && isPlaying && currentSong && !currentSong.isSC) {
+        analyser.getByteFrequencyData(dataArray);
+        for (let i = 0; i < 10; i++) bassSum += dataArray[i] || 0;
+        for (let i = 0; i < segments; i++) {
+          const mirrorIdx = i < segments / 2 ? i : segments - 1 - i;
+          const idx = Math.floor((mirrorIdx / (segments / 2)) * (dataArray.length * 0.65));
+          freqValues[i] = (dataArray[idx] || 0) / 255;
+        }
+      } else if (isPlaying) {
+        for (let i = 0; i < segments; i++) {
+          const sim = Math.abs(Math.sin(wavePhase * 1.4 + i * 0.25)) * 0.65 +
+                      Math.abs(Math.cos(wavePhase * 2.1 - i * 0.15)) * 0.35;
+          freqValues[i] = sim;
+        }
+        bassSum = (Math.sin(wavePhase * 2.5) * 0.5 + 0.5) * 1800;
+      } else {
+        for (let i = 0; i < segments; i++) {
+          freqValues[i] = 0.08 + Math.sin(wavePhase + i * 0.2) * 0.04;
+        }
+      }
+
+      const bassIntensity = Math.min(1, bassSum / 2200);
+      const discScale = isPlaying ? 1 + bassIntensity * 0.055 : 1;
+      vinylDisc.style.transform = `scale(${discScale.toFixed(3)})`;
+
+      const outerPoints = [];
+      const innerPoints = [];
+
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2 - Math.PI / 2;
+        const amp = freqValues[i];
+        const ripple1 = Math.sin(i * 0.35 + wavePhase * 1.8) * (isPlaying ? 6 : 2);
+        const ripple2 = Math.cos(i * 0.25 - wavePhase * 1.5) * (isPlaying ? 5 : 2);
+
+        const r1 = baseRadius + amp * 42 + ripple1;
+        const r2 = baseRadius - 4 + amp * 28 + ripple2;
+
+        outerPoints.push({
+          x: cx + Math.cos(angle) * r1,
+          y: cy + Math.sin(angle) * r1
+        });
+        innerPoints.push({
+          x: cx + Math.cos(angle) * r2,
+          y: cy + Math.sin(angle) * r2
+        });
+      }
+
+      const colors = getThemeColors(wavePhase * 28);
+      drawSmoothClosedWave(cx, cy, innerPoints, colors.stroke2, 2.5, colors.glow);
+      drawSmoothClosedWave(cx, cy, outerPoints, colors.stroke1, 3.5, colors.glow);
+    }
+
+    function renderPlaylist() {
+      songListEl.innerHTML = '';
+      songs.forEach((song, idx) => {
+        const li = document.createElement('li');
+        li.className = `song-item ${idx === currentIndex ? 'active' : ''}`;
+        li.title = song.fullTitle || song.title;
+        const indexDisplay = idx === currentIndex && isPlaying
+          ? '<span class="eq-bars"><span></span><span></span><span></span></span>'
+          : String(idx + 1).padStart(2, '0');
+
+        const bg = thumbColors[idx % thumbColors.length];
+
+        li.innerHTML = `
+          <span class="song-index">${indexDisplay}</span>
+          <div class="song-thumb" style="background:${bg}">♪</div>
+          <span class="song-name">${song.title}</span>
+          <span class="song-duration">${song.duration}</span>
+        `;
+        li.addEventListener('click', () => {
+          loadSong(idx, true);
+        });
+        songListEl.appendChild(li);
+      });
+    }
+
+    function loadSong(index, autoPlay = false) {
+      if (!songs.length) return;
+      currentIndex = index;
+      const song = songs[currentIndex];
+      updateLeftTitle(song.title);
+      currentArtist.textContent = song.artist;
+      totalTimeEl.textContent = song.duration;
+      trackCounter.textContent = `${currentIndex + 1} / ${songs.length}`;
+      progressFill.style.width = '0%';
+      currentTimeEl.textContent = '00:00';
+
+      if (song.isSC) {
+        audio.pause();
+        scWidget.skip(song.scIndex);
+        if (autoPlay) {
+          scWidget.play();
+        } else {
+          scWidget.pause();
+          renderPlaylist();
+        }
+      } else {
+        scWidget.pause();
+        audio.src = song.src;
+        if (autoPlay) playSong();
+        else renderPlaylist();
+      }
+    }
+
+    function playSong() {
+      const song = songs[currentIndex];
+      if (!song) return;
+
+      if (song.isSC) {
+        scWidget.play();
+        isPlaying = true;
+        vinylDisc.classList.add('playing');
+        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        renderPlaylist();
+      } else {
+        initAudioVisualizer();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        isPlaying = true;
+        audio.play().catch(() => { isPlaying = false; });
+        vinylDisc.classList.add('playing');
+        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        renderPlaylist();
+      }
+    }
+
+    function pauseSong() {
+      const song = songs[currentIndex];
+      isPlaying = false;
+      if (song && song.isSC) {
+        scWidget.pause();
+      } else {
+        audio.pause();
+      }
+      vinylDisc.classList.remove('playing');
+      playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      renderPlaylist();
+    }
+
+    // Chế độ nhạc offline (file trong máy) <-> nhạc online (SoundCloud)
+    let offlineMode = false;
+    let onlineSongs = [];
+    let onlineIndex = 0;
+
+    function stopPlaybackUI() {
+      isPlaying = false;
+      audio.pause();
+      scWidget.pause();
+      vinylDisc.classList.remove('playing');
+      playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    }
+
+    // ===== Lưu nhạc offline bằng IndexedDB (không cần chọn lại sau khi tải lại trang) =====
+    let savedTracks = []; // [{ id, name, blob }]
+
+    function openTrackDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open('chai65-player', 1);
+        req.onupgradeneeded = () => {
+          req.result.createObjectStore('tracks', { keyPath: 'id', autoIncrement: true });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbGetAllTracks() {
+      const db = await openTrackDB();
+      return new Promise((resolve, reject) => {
+        const req = db.transaction('tracks', 'readonly').objectStore('tracks').getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbAddTracks(items) {
+      const db = await openTrackDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('tracks', 'readwrite');
+        const store = tx.objectStore('tracks');
+        items.forEach(item => store.add(item));
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function dbClearTracks() {
+      const db = await openTrackDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('tracks', 'readwrite');
+        tx.objectStore('tracks').clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function updateSourceButtons() {
+      onlineBtn.classList.toggle('active', !offlineMode);
+      offlineBtn.classList.toggle('active', offlineMode);
+      clearOfflineBtn.hidden = !(offlineMode && savedTracks.length);
+      offlineBtnText.textContent = savedTracks.length
+        ? (offlineMode ? `Nhạc offline (${savedTracks.length}) +` : `Nhạc offline (${savedTracks.length})`)
+        : 'Nhạc offline';
+      offlineBtn.title = offlineMode
+        ? 'Chọn thêm nhạc từ máy để lưu vào danh sách offline'
+        : (savedTracks.length ? 'Phát danh sách nhạc offline đã lưu' : 'Chọn nhạc có sẵn trong máy (không cần mạng)');
+    }
+
+    function trackToSong(track) {
+      const cleanName = track.name.replace(/\.[^/.]+$/, "");
+      return {
+        title: cleanSongTitle(cleanName),
+        fullTitle: cleanName,
+        artist: "Nhạc offline • 1chai65",
+        duration: "--:--",
+        src: URL.createObjectURL(track.blob),
+        isSC: false,
+        isLoadedMeta: true
+      };
+    }
+
+    function revokeOfflineUrls() {
+      songs.forEach(s => { if (!s.isSC && s.src) URL.revokeObjectURL(s.src); });
+    }
+
+    // Chuyển sang danh sách nhạc offline đã lưu
+    function enterOffline(startIndex, autoPlay) {
+      stopPlaybackUI();
+      if (!offlineMode) {
+        onlineSongs = songs;
+        onlineIndex = currentIndex;
+        offlineMode = true;
+      } else {
+        revokeOfflineUrls();
+      }
+      songs = savedTracks.map(trackToSong);
+      updateSourceButtons();
+      loadSong(Math.min(startIndex, songs.length - 1), autoPlay);
+    }
+
+    // Quay về danh sách SoundCloud
+    function goOnline(message) {
+      if (!offlineMode) return;
+      stopPlaybackUI();
+      revokeOfflineUrls();
+      songs = onlineSongs;
+      onlineSongs = [];
+      offlineMode = false;
+      updateSourceButtons();
+      loadSong(Math.min(onlineIndex, Math.max(songs.length - 1, 0)), false);
+      if (message) showToast(message);
+    }
+
+    // Nút Nhạc offline: có nhạc đã lưu -> phát luôn; đang ở offline -> chọn thêm; chưa có -> chọn file
+    offlineBtn.addEventListener('click', () => {
+      if (!offlineMode && savedTracks.length) {
+        enterOffline(0, true);
+        showToast(`Đã mở ${savedTracks.length} bài offline đã lưu`);
+      } else {
+        offlineInput.click();
+      }
+    });
+
+    // Nút Nhạc online
+    onlineBtn.addEventListener('click', () => {
+      if (!offlineMode) {
+        showToast('Đang ở chế độ nhạc online');
+        return;
+      }
+      goOnline('Đã chuyển sang nhạc online');
+    });
+
+    // Nút Xóa nhạc đã lưu
+    clearOfflineBtn.addEventListener('click', async () => {
+      if (!confirm('Xóa toàn bộ nhạc offline đã lưu trong trình duyệt?')) return;
+      try { await dbClearTracks(); } catch (e) {}
+      savedTracks = [];
+      goOnline();
+      updateSourceButtons();
+      showToast('Đã xóa nhạc offline đã lưu');
+    });
+
+    // Tải lại danh sách đã lưu khi mở trang
+    async function loadSavedTracks() {
+      try {
+        savedTracks = await dbGetAllTracks();
+        if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+      } catch (e) {
+        savedTracks = [];
+      }
+      updateSourceButtons();
+    }
+
+    offlineInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      offlineInput.value = '';
+      if (!files.length) return;
+
+      const newItems = files.map(file => ({ name: file.name, blob: file }));
+      const firstNewIndex = savedTracks.length;
+      let saved = true;
+
+      try {
+        await dbAddTracks(newItems);
+        savedTracks = await dbGetAllTracks();
+      } catch (err) {
+        // Trình duyệt không cho lưu -> vẫn phát được nhưng chỉ trong lần mở trang này
+        saved = false;
+        savedTracks = savedTracks.concat(newItems.map((it, i) => ({ id: 'tmp' + Date.now() + i, ...it })));
+      }
+
+      enterOffline(firstNewIndex, true);
+      showToast(saved
+        ? `Đã lưu thêm ${files.length} bài • tổng ${savedTracks.length} bài offline`
+        : 'Trình duyệt không cho lưu nhạc, danh sách chỉ dùng trong lần mở này');
+    });
+
+    playBtn.addEventListener('click', () => (isPlaying ? pauseSong() : playSong()));
+    prevBtn.addEventListener('click', () => {
+      const prevIdx = isShuffle ? getRandomIndex() : (currentIndex - 1 + songs.length) % songs.length;
+      loadSong(prevIdx, true);
+    });
+    nextBtn.addEventListener('click', () => {
+      const nextIdx = isShuffle ? getRandomIndex() : (currentIndex + 1) % songs.length;
+      loadSong(nextIdx, true);
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const percent = (audio.currentTime / audio.duration) * 100;
+      progressFill.style.width = `${percent}%`;
+      const mins = Math.floor(audio.currentTime / 60);
+      const secs = Math.floor(audio.currentTime % 60);
+      currentTimeEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+      if (!audio.duration || isNaN(audio.duration)) return;
+      const mins = Math.floor(audio.duration / 60);
+      const secs = Math.floor(audio.duration % 60);
+      const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      totalTimeEl.textContent = formatted;
+      songs[currentIndex].duration = formatted;
+      renderPlaylist();
+    });
+
+    progressBar.addEventListener('click', (e) => {
+      const width = progressBar.clientWidth;
+      const ratio = Math.max(0, Math.min(1, e.offsetX / width));
+      const song = songs[currentIndex];
+      if (!song) return;
+
+      if (song.isSC) {
+        scWidget.getDuration((dur) => {
+          if (dur) scWidget.seekTo(dur * ratio);
+        });
+      } else if (audio.duration) {
+        audio.currentTime = ratio * audio.duration;
+      }
+    });
+
+    function handleSongEnded() {
+      if (repeatMode === 2) {
+        const song = songs[currentIndex];
+        if (song && song.isSC) {
+          scWidget.seekTo(0);
+          scWidget.play();
+        } else {
+          audio.currentTime = 0;
+          playSong();
+        }
+      } else if (isShuffle) {
+        loadSong(getRandomIndex(), true);
+      } else if (currentIndex < songs.length - 1) {
+        loadSong(currentIndex + 1, true);
+      } else if (repeatMode === 1) {
+        loadSong(0, true);
+      } else {
+        pauseSong();
+      }
+    }
+
+    audio.addEventListener('ended', handleSongEnded);
+
+    updateModeUI();
+    renderVisualizer();
+    loadSavedTracks();
+  </script>
+</body>
+</html>
