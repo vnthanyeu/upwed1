@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>1chai65 - Chill Music Player</title>
   <style>
     :root {
@@ -757,9 +757,110 @@
         justify-content: center;
       }
     }
-  
-    /* Đã ẩn logo thương hiệu theo yêu cầu */
-    .brand-logo, #logoInput { display: none !important; }
+
+    .top-actions { width: 100%; justify-content: center; }
+
+    /* ===== Tối ưu hiển thị tự động vừa máy tính & điện thoại ===== */
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    * { -webkit-tap-highlight-color: transparent; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: clamp(10px, 2vh, 24px) clamp(10px, 2vw, 24px);
+      padding-left: max(clamp(10px, 2vw, 24px), env(safe-area-inset-left));
+      padding-right: max(clamp(10px, 2vw, 24px), env(safe-area-inset-right));
+      padding-bottom: max(clamp(10px, 2vh, 24px), env(safe-area-inset-bottom));
+    }
+
+    .player-container {
+      max-width: min(980px, 100%);
+      padding: clamp(18px, 3vh, 34px) clamp(18px, 2.6vw, 34px);
+      gap: clamp(18px, 2.6vw, 34px);
+    }
+
+    /* Đĩa than co giãn theo màn hình (giữ nguyên tỉ lệ) */
+    .vinyl-wrapper {
+      width: clamp(170px, 34vh, 245px);
+      height: auto;
+      aspect-ratio: 1 / 1;
+    }
+    .vinyl-disc { width: 66%; height: auto; aspect-ratio: 1 / 1; }
+    .vinyl-center { width: 35%; height: auto; aspect-ratio: 1 / 1; border-width: clamp(3px, 0.6vw, 5px); }
+
+    .song-title { font-size: clamp(15px, 2.2vh, 18px); }
+    .top-bar { flex-wrap: wrap; }
+    .song-list { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+
+    /* Máy tính: vừa khít 1 màn hình, danh sách bài hát tự cuộn */
+    @media (min-width: 769px) {
+      body { justify-content: center; }
+      .player-container {
+        max-height: calc(100vh - 80px);
+        max-height: calc(100dvh - 80px);
+        grid-template-rows: minmax(0, 1fr);
+        align-items: stretch;
+      }
+      .left-panel { min-height: 0; overflow-y: auto; scrollbar-width: none; }
+      .left-panel::-webkit-scrollbar { display: none; }
+      .right-panel { min-height: 0; }
+      .song-list { flex: 1 1 auto; min-height: 0; max-height: none; }
+    }
+
+    /* Máy tính màn hình thấp (laptop nhỏ) */
+    @media (min-width: 769px) and (max-height: 700px) {
+      .player-container { padding: 16px 20px; gap: 20px; }
+      .vinyl-wrapper { width: clamp(140px, 30vh, 200px); margin: 2px 0; }
+      .wave-color-bar { margin-top: 6px; }
+      .progress-area { margin-top: 8px; }
+      .controls { margin-top: 8px; }
+      .bottom-ticker { margin-top: 10px; }
+    }
+
+    /* Điện thoại / máy tính bảng dọc: 1 cột, cuộn trang tự nhiên */
+    @media (max-width: 768px) {
+      body { justify-content: flex-start; padding-top: 12px; }
+      .player-container {
+        grid-template-columns: 1fr;
+        max-height: none;
+        padding: 18px 16px;
+        gap: 22px;
+        border-radius: 22px;
+      }
+      .left-panel { gap: 6px; }
+      .vinyl-wrapper { width: clamp(200px, 66vw, 280px); margin: 10px 0; }
+      .top-actions { flex: 1; }
+      .upload-btn { padding: 8px 12px; font-size: 12px; }
+      .controls { gap: 14px; margin-top: 14px; }
+      .ctrl-btn { width: 44px; height: 44px; }
+      .ctrl-btn.mode-btn { width: 40px; height: 40px; }
+      .play-btn { width: 60px; height: 60px; }
+      .progress-bar { height: 8px; }
+      .progress-area { margin-top: 18px; }
+      .color-dot-btn { width: 20px; height: 20px; }
+      .wave-color-bar { gap: 16px; margin-top: 12px; }
+      .song-list { max-height: min(46vh, 420px); min-height: 160px; }
+      .song-item { padding: 10px 12px; }
+      .social-footer { justify-content: center; }
+      .social-btn { padding: 8px 13px; font-size: 12px; }
+      .bottom-ticker { margin-top: 14px; font-size: 12px; }
+      .toast { left: 12px; right: 12px; bottom: max(14px, env(safe-area-inset-bottom)); text-align: center; }
+    }
+
+    /* Điện thoại nhỏ */
+    @media (max-width: 380px) {
+      .player-container { padding: 14px 12px; }
+      .playlist-header h2 { font-size: 18px; }
+      .controls { gap: 8px; }
+      .social-btn span { font-size: 11px; }
+    }
+
+    /* Điện thoại xoay ngang (màn hình thấp) */
+    @media (max-height: 480px) and (orientation: landscape) and (max-width: 1000px) {
+      .player-container { grid-template-columns: 1fr 1.2fr; max-height: none; }
+      .vinyl-wrapper { width: 150px; }
+      .song-list { max-height: 60vh; }
+    }
   </style>
 </head>
 <body>
@@ -773,19 +874,13 @@
     scrolling="no"
     frameborder="no"
     allow="autoplay"
-    src="https://w.soundcloud.com/player/?url=https%3A//soundcloud.com/nh-c-chill-704028673/sets/tiktok-vi-t-nam-remix-2025%3Fsi%3D48ebedf87bda49d09fe0742c5aba626d&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false">
+    src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2F1chai65%2Fsets%2Ftet-nhac%3Fsi%3Da85e5ae706b94eb8a31b3eda83d87038%26utm_source%3Dclipboard%26utm_medium%3Dtext%26utm_campaign%3Dsocial_sharing&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false">
   </iframe>
 
   <div class="player-container">
     <!-- Cột trái -->
     <div class="left-panel">
       <div class="top-bar">
-        <div class="brand-logo" id="logoContainer" title="Bấm để đổi ảnh logo (.jpg)">
-          <img id="logoImg" src="logo.jpg" alt="1chai65" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';">
-          <span id="logoFallback" class="logo-fallback" style="display:none;">1chai65</span>
-        </div>
-        <input type="file" id="logoInput" accept="image/jpeg,image/jpg,image/png,image/webp" hidden />
-
         <div class="top-actions">
           <button type="button" class="upload-btn active" id="onlineBtn" title="Nghe nhạc từ SoundCloud (cần mạng)">
             <span>Nhạc online</span>
@@ -980,10 +1075,6 @@
     const offlineBtnText = document.getElementById('offlineBtnText');
     const clearOfflineBtn = document.getElementById('clearOfflineBtn');
     const offlineInput = document.getElementById('offlineInput');
-    const logoContainer = document.getElementById('logoContainer');
-    const logoInput = document.getElementById('logoInput');
-    const logoImg = document.getElementById('logoImg');
-    const logoFallback = document.getElementById('logoFallback');
     const shareWebBtn = document.getElementById('shareWebBtn');
     const toastEl = document.getElementById('toast');
 
@@ -1083,7 +1174,24 @@
             }
           }, 2500);
         } else {
-          songListEl.innerHTML = '<li class="song-item" style="justify-content:center;">Không tải được danh sách SoundCloud.</li>';
+          // Nguồn là 1 bài đơn lẻ: lấy thông tin bài đang nạp
+          scWidget.getCurrentSound((s) => {
+            if (!s) {
+              songListEl.innerHTML = '<li class="song-item" style="justify-content:center;">Không tải được danh sách SoundCloud.</li>';
+              return;
+            }
+            songs = [{
+              title: cleanSongTitle(s.title),
+              fullTitle: s.title,
+              artist: s.user && s.user.username ? s.user.username : "",
+              duration: formatMs(s.duration),
+              durationMs: s.duration || 0,
+              isSC: true,
+              scIndex: 0,
+              isLoadedMeta: true
+            }];
+            loadSong(0, false);
+          });
         }
       });
     });
@@ -1169,16 +1277,6 @@
           showToast('Trang nghe nhạc 1chai65!');
         }
       }
-    });
-
-    // Đổi logo .jpg
-    logoContainer.addEventListener('click', () => logoInput.click());
-    logoInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      logoImg.src = URL.createObjectURL(file);
-      logoImg.style.display = 'block';
-      logoFallback.style.display = 'none';
     });
 
     function updateModeUI() {
